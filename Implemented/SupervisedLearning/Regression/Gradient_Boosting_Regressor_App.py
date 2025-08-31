@@ -1,0 +1,69 @@
+# GRADIENT BOOSTING REGRESSOR DEMO
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+from sklearn.datasets import load_diabetes, fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+def gradient_boosting_regression_page():
+    st.sidebar.title("🌟 Gradient Boosting Regression")
+    dataset_name = st.sidebar.selectbox("Select Dataset", ("Diabetes", "California Housing"))
+
+    @st.cache_data
+    def load_dataset(name):
+        if name == "Diabetes":
+            data = load_diabetes()
+            return pd.DataFrame(data.data, columns=data.feature_names), data.target
+        elif name == "California Housing":
+            data = fetch_california_housing()
+            return pd.DataFrame(data.data, columns=data.feature_names), data.target
+
+    X, y = load_dataset(dataset_name)
+
+    # Sidebar params
+    st.sidebar.subheader("⚙️ Model Parameters")
+    n_estimators = st.sidebar.slider("Number of Trees", 50, 500, 100, step=50)
+    learning_rate = st.sidebar.slider("Learning Rate", 0.01, 0.5, 0.1)
+    max_depth = st.sidebar.slider("Max Depth", 1, 10, 3)
+    test_size = st.sidebar.slider("Test Size", 0.1, 0.5, 0.3)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+
+    model = GradientBoostingRegressor(n_estimators=n_estimators, learning_rate=learning_rate, max_depth=max_depth, random_state=42)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    st.title("🌟 Gradient Boosting Regressor Demo")
+
+    with st.expander("❓ What is Gradient Boosting Regression?"):
+        st.markdown("""
+        Gradient Boosting builds an **ensemble of weak learners (usually trees)** sequentially.  
+        Each tree corrects the errors of the previous one.  
+
+        ✅ Powerful for tabular data  
+        ✅ Handles non-linear patterns well  
+        ⚠️ Sensitive to hyperparameters (learning rate, depth, #trees)  
+        """)
+
+    # Metrics
+    st.subheader("📈 Performance Metrics")
+    metrics = {
+        "R² Score": r2_score(y_test, y_pred),
+        "MAE": mean_absolute_error(y_test, y_pred),
+        "MSE": mean_squared_error(y_test, y_pred),
+        "RMSE": np.sqrt(mean_squared_error(y_test, y_pred))
+    }
+    st.dataframe(pd.DataFrame([metrics]).round(3))
+
+    # Predictions vs Actual
+    st.subheader("📉 Predictions vs Actual")
+    fig, ax = plt.subplots()
+    ax.scatter(y_test, y_pred, alpha=0.7)
+    ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
+    ax.set_xlabel("Actual")
+    ax.set_ylabel("Predicted")
+    st.pyplot(fig)
